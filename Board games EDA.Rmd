@@ -1,0 +1,31 @@
+---
+title: "Board games project"
+output: html_document
+date: '2022-05-04'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-25/ratings.csv')
+details <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-25/details.csv')
+
+head(details)
+head(ratings)
+
+ratings %>%
+  arrange(desc(bayes_average))
+```
+
+My initial questions are...
+Which game has the highest average?
+
+General questions:
+what is bayes average?
+do i need to get rid of the []s in my data probably. am i even gonna use those cols tho.
+
+
+
