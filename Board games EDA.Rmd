@@ -89,7 +89,81 @@ games = combo %>%
   select(-c(url, thumbnail,boardgamefamily, boardgameimplementation, num.y, primary))
 ```
 
+
+
+Looks like some games have 0 in playingtime but a value in minplaytime. Lets assign that to the playingtime when playingtime is 0. I forget how tho. could def do mutate but kind of annoying.
+
 ```{r}
+games$playingtime == 0
+
+```
+
+
+Remove useless rows, seems like when year is 0 the rows are usually not meaningful
+
+```{r}
+games %>%
+  filter(year == 0 & playingtime == 0)
+
+
+```
+
+
+
+figuring out what to do about really long games
+
+```{r}
+games %>%
+  ggplot(aes(y = playingtime)) + geom_boxplot()
+
+games %>%
+  filter(playingtime < 8000) %>%
+  ggplot(aes(y = playingtime)) + geom_boxplot()
+
+10000/60
+#thats 166 hours. I know people can game forever but uh I dont think thats right.
+
+#maybe min playing time is better to look at
+
+games %>%
+  filter(minplaytime < 500) %>%
+  ggplot(aes(y = minplaytime)) + geom_boxplot()
+
+#not really honestly
+
+#how do I sort the bars? probably something about factors
+games %>%
+  mutate(game_lengths = ifelse(playingtime < 15, "Very Short (<15 min)", ifelse(playingtime < 30, "Short (15-30 min)", ifelse(playingtime < 60, "Medium (30-60 min)", ifelse(playingtime < 120, "Long (60-120 min)", ifelse(playingtime < 240, "Very Long (120-240 min)", "Multiple Days")))))) %>%
+  ggplot(aes(x = game_lengths)) + geom_bar()
+
+
+#probably there should be a reason I picked these increments. They just seemed good to me. should also check how many 0s there were.
+
+
+
+
+```
+
+
+
+
+I think i will start with the easier ones before tackling category lol
+
+Looking at playing time here
+
+```{r}
+games %>%
+  group_by(playingtime) %>%
+  summarise(avg_rating = mean(average))
+
+breaks = se
+
+games %>%
+  ggplot(aes(x = playingtime)) + geom_histogram(bins = 100) + scale_x_continuous(limits = c(0, 2000))
+
+sapply(games,class)
+
+
 
 ```
 
