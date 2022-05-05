@@ -3,10 +3,20 @@ title: "Board games project"
 output: html_document
 date: '2022-05-04'
 ---
+Note: 
+"In all uses of the BGG XML API, you shall credit BoardGameGeek by name as the source of the data."
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+```
+
 
 ```{r}
 
@@ -20,12 +30,68 @@ ratings %>%
   arrange(desc(bayes_average))
 ```
 
-My initial questions are...
-Which game has the highest average?
+My initial data questions are...
+Which game has the highest average? What are the characteristics of the top 100 games? Games by age group? most user ratings? 
 
-General questions:
-what is bayes average?
-do i need to get rid of the []s in my data probably. am i even gonna use those cols tho.
+Should I get rid of games with like less than 100 reviews?
+
+Maybe I can make a recommendation system based on how many people you have, how much time, how old (like over under 12 or something) and what kind of games you like?
+
+
+General questions about the data:
+what is bayes average? Think it weights number of samples. So for example a game with three reviews but they're all 10s isn't number 1.
+do i need to get rid of the []s in my data probably. am i even gonna use those cols tho. Oh is it just a list within a column? Could be good.
+How do I deal with double counting for example if a game is "city building" and "medieval"
+what is wanting vs wishing in the ratings db?
+
+
+On the rating system:
+
+"There are three rating systems you will see on the site:
+User Rating (aka Your Rating): doesnt matter here
+Average Rating: The average of all the ratings from registered BGG users, calculated by adding up the individual ratings and dividing by the number of ratings. You will see this rating listed in advanced searches and near the top of game pages.
+BGG Rating (aka Geek Rating): BoardGameGeek's ranking charts are ordered using the BGG Rating, which is based on the Average Rating, but with some alterations. To prevent games with relatively few votes climbing to the top of the BGG Ranks, artificial "dummy" votes are added to the User Ratings. These votes are currently thought to be 100 votes equal to the mid range of the voting scale: 5.5, but the actual algorithm is kept secret to avoid manipulation. The effect of adding these dummy votes is to pull BGG Ratings toward the mid range. Games with a large number of votes will see their BGG Rating alter very little from their Average Rating, but games with relatively few user ratings will see their BGG Rating move considerably toward 5.5. This is known as "Bayesian averaging" and a quick search of both BGG and/or the Web will reveal much discussion on the topic. You will see this rating listed in advanced searches, your game collection, and near the top, most right corner of game pages.
+
+
+
+```{r}
+
+#interesting to see the two rating systems. I dont really want to but I could also do my own rating system of sorts
+#where I use the real average but only include games with at least however many reviews
+ratings %>%
+  ggplot(aes(x = bayes_average)) + geom_histogram()
+
+ratings %>%
+  ggplot(aes(x = average)) + geom_histogram()
+
+```
+
+
+Combine the datasets here:
+
+```{r}
+combo = ratings %>%
+  inner_join(details, by = "id")
+```
+
+checking to make sure all the games are matching up 
+```{r}
+combo %>%
+  filter(name != primary)
+
+#only five dont match up and its mostly because of quotation marks or $ weird characters
+```
+
+
+Removing unecessary columns
+```{r}
+games = combo %>%
+  select(-c(url, thumbnail,boardgamefamily, boardgameimplementation, num.y, primary))
+```
+
+```{r}
+
+```
 
 
 
