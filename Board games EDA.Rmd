@@ -47,7 +47,7 @@ General questions about the data:
 what is bayes average? Think it weights number of samples. So for example a game with three reviews but they're all 10s isn't number 1.
 do i need to get rid of the []s in my data probably. am i even gonna use those cols tho. Oh is it just a list within a column? Could be good.
 How do I deal with double counting for example if a game is "city building" and "medieval"
-what is wanting vs wishing in the ratings db?
+what is wanting vs wishing in the ratings db? -- seems like wishing is if its on someones wishlist, wanting is if they are actively looking to trade someone for it. Wishing seems more useful then.
 
 
 On the rating system:
@@ -275,10 +275,91 @@ df %>%
   ggplot(aes(x = fct_reorder(category, perc), y = perc)) + geom_col() + labs(title = "Top Game Categories (Make up over 1.5% of all categories)") + scale_x_discrete("Category") + scale_y_continuous("Percent of Total Categories") +coord_flip()
 
 
-#for loop through the top categories like this to create new category columns
-sapply(games$boardgamecategory, function(lst) "Medieval" %in% lst)
+
+top_cats = df %>%
+  count(category) %>%
+  mutate(perc = n/nrow(df)) %>%
+  arrange(desc(perc)) %>%
+  filter(perc > .015)
+
+top_cats = top_cats[[1]]
 
 
 ```
 
+
+```{r}
+
+#for loop through the top categories like this to create new category columns
+#sapply(games$boardgamecategory, function(lst) as.numeric("Medieval" %in% lst))
+
+
+for (cat in top_cats)
+{
+  
+  new = sapply(games$boardgamecategory, function(lst) as.numeric(cat %in% lst))
+  games[ , ncol(games) + 1] = new
+  colnames(games)[ncol(games)] = as.character(cat)
+
+}
+
+#yay! have 21 new columns with 0 and 1s saying if something has the category type. Honestly wouldn't be huge deal to do more categories than this.
+```
+
+Average rating per category type? If using in a slide def acknowledge that most games have more than one category listed
+
+```{r}
+#I think I might need to do a for loop for this too? For loop and dplyr!??!
+
+#initialize data frame so i can rbind. Couldn't figure out how to do an empty dataframe so i guess I will just create a row and delete later
+# cat_stats = data.frame(matrix(ncol = 3, nrow = 0))
+# x = c("median_rating", "sd_rating", "Category")
+# colnames(cat_stats) = x
+cat_stats = data.frame(Category = "", median_rating = 0, mean_rating = 0, sd_rating = 0, median_owned = 0, mean_owned = 0, sd_owned = 0, median_wishing = 0, mean_wishing = 0, sd_wishing = 0)
+for (cat in top_cats) {
+  cat_stat = games %>%
+  filter(games[cat] == 1) %>%
+  summarise(median_rating = median(average), mean_rating = mean(average), sd_rating = sd(average), median_owned = median(owned),  mean_owned = mean(owned), sd_owned = sd(owned), median_wishing = median(wishing), mean_wishing = mean(wishing), sd_wishing = sd(wishing))
+  cat_stat$Category = as.character(cat)
+  cat_stats = rbind(cat_stats, cat_stat)
+}
+
+cat_stats = cat_stats %>%
+  filter(Category != "")
+
+cat_stats
+```
+Wowza means are pretty different than the medians for owned and wishing. Much higher. data must be skewed right. Certain games must have a ton more people reporting they own/wish for the games.
+Lets graph the cat_stats for rating. How to graph something with median and sd??
+
+```{r}
+
+ggplot(cat_stats, aes(x = fct_reorder(Category, mean_rating), y = mean_rating)) + geom_bar(position = position_dodge(), stat = 'identity', fill = wes_palette(n=5, name="FantasticFox1")[3]) + geom_errorbar(aes(ymin = mean_rating - sd_rating, ymax = mean_rating + sd_rating), width = .2) + coord_flip() + labs(title = "Average User Scores by Game Category") + scale_x_discrete(name="Board Game Category")  + scale_y_continuous(name = "Average User Rating")
+
+```
+
+```{r}
+ggplot(cat_stats, aes(x = fct_reorder(Category, mean_owned), y = mean_owned)) + geom_bar(position = position_dodge(), stat = 'identity', fill = wes_palette(n=5, name="FantasticFox1")[3]) + geom_errorbar(aes(ymin = mean_owned - sd_owned, ymax = mean_owned + sd_owned), width = .2) + coord_flip() + labs(title = "Average Number of Users Owning Game by Category") + scale_x_discrete(name="Board Game Category")  + scale_y_continuous(name = "Average Number of Users Owning Game")
+
+#ha ha this is not very useful
+#should I have made a cutoff of games must be owned by at least 100 people or something?
+```
+
+```{r}
+
+ggplot(cat_stats, aes(x = fct_reorder(Category, mean_wishing), y = mean_wishing)) + geom_bar(position = position_dodge(), stat = 'identity', fill = wes_palette(n=5, name="FantasticFox1")[3]) + geom_errorbar(aes(ymin = mean_wishing - sd_wishing, ymax = mean_wishing + sd_wishing), width = .2) + coord_flip() + labs(title = "Average Number of Users with Game on Wishlist by Category") + scale_x_discrete(name="Board Game Category")  + scale_y_continuous(name = "Average Number of Users with Game on Wishlist")
+
+```
+
+
+
+Scatter plot of mean rating and mean owned/wishing? Or median?
+
+```{r}
+ggplot(cat_stats, aes(x = mean_rating, y = mean_owned)) + geom_point()
+
+ggplot(cat_stats, aes(x = mean_rating, y = mean_wishing)) + geom_point()
+
+ggplot(cat_stats, aes(x = median_rating, y = median_wishing)) + geom_point()
+```
 
