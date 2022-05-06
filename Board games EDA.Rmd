@@ -17,6 +17,8 @@ library(tidyr)
 library(tidyverse)
 #install.packages("wesanderson")
 library(wesanderson)
+library(stringr)
+library(forcats)
 ```
 
 
@@ -205,3 +207,78 @@ plot(model)
 
 
 Year vs year published??
+
+Pretty much the same
+
+
+Ok going to try to look at the categories. weeee
+
+```{r}
+#just figuring out what to do here
+
+class(games$boardgamecategory)
+
+test = games$boardgamecategory[2]
+test
+test = gsub(x = test, pattern = "'", replacement = "")
+test
+test = gsub(x = test, pattern = '\\[', replacement = '')
+test
+test = gsub(x = test, pattern = '\\]', replacement = '')
+test
+str_split(test, ", ")
+
+```
+
+Go time, trying to make all the category column into a list
+
+```{r}
+
+games$boardgamecategory = gsub("'", "", as.character(games$boardgamecategory))
+
+games$boardgamecategory = gsub("\\[", "", as.character(games$boardgamecategory))
+
+games$boardgamecategory = gsub("\\]", "", as.character(games$boardgamecategory))
+
+games$boardgamecategory = gsub('"', '', as.character(games$boardgamecategory))
+
+games$boardgamecategory = str_split(games$boardgamecategory, ", ")
+
+head(games)
+
+sum(!is.na(unique(unlist(games$boardgamecategory))))
+#84 different categories of boardgames. Which are the top 20?
+
+
+
+```
+
+```{r}
+#find top 20 most common game types
+
+df = data.frame(category = unlist(games$boardgamecategory))
+
+df %>%
+  count(category) %>%
+  mutate(perc = n/nrow(df)) %>%
+  arrange(desc(perc)) %>%
+  ggplot(aes(x = fct_reorder(category, perc), y = perc)) + geom_col() + labs(ylab = "% of total categories")
+
+
+#looks like there is a drop off in the graph around .015.
+
+df %>%
+  count(category) %>%
+  mutate(perc = n/nrow(df)) %>%
+  arrange(desc(perc)) %>%
+  filter(perc > .015) %>%
+  ggplot(aes(x = fct_reorder(category, perc), y = perc)) + geom_col() + labs(title = "Top Game Categories (Make up over 1.5% of all categories)") + scale_x_discrete("Category") + scale_y_continuous("Percent of Total Categories") +coord_flip()
+
+
+#for loop through the top categories like this to create new category columns
+sapply(games$boardgamecategory, function(lst) "Medieval" %in% lst)
+
+
+```
+
+
