@@ -363,3 +363,18 @@ ggplot(cat_stats, aes(x = mean_rating, y = mean_wishing)) + geom_point()
 ggplot(cat_stats, aes(x = median_rating, y = median_wishing)) + geom_point()
 ```
 
+```{r}
+model_ro = lm(owned ~ average, games)
+
+summary(model_ro)
+
+model_rw = lm(wishing ~ average, games)
+
+summary(model_rw)
+
+#neither of them are really great but average seems to predict rating better than it predicts owned.
+
+#i know i can use category but its gonna be annoying but i should do it
+
+```
+
