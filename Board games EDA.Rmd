@@ -167,7 +167,7 @@ games_ptcleaned = games %>%
   mutate(game_lengths = ifelse(playingtime < 15, "Very Short (<15 min)", ifelse(playingtime < 30, "Short (15-30 min)", ifelse(playingtime < 60, "Medium (30-60 min)", ifelse(playingtime < 120, "Long (60-120 min)", ifelse(playingtime < 240, "Very Long (120-240 min)", "More than 240 min"))))))
 
 games_ptcleaned %>%
-  ggplot(aes(x = factor(game_lengths, level = (level_order)))) + geom_bar(fill = wes_palette(n = 1, name = "FantasticFox1")) + coord_flip() + labs(title = "Board Game Lengths") + scale_x_discrete(name="Board Game Length") + scale_y_continuous(name="Count")
+  ggplot(aes(x = factor(game_lengths, level = (level_order)))) + geom_bar(fill = c(wes_palette(n = 5, name = "Darjeeling1"), wes_palette(n = 4, name = "GrandBudapest2")[4])) + coord_flip() + labs(title = "Board Game Lengths") + scale_x_discrete(name="Board Game Length") + scale_y_continuous(name="Count")
 
 
 
@@ -189,7 +189,7 @@ Looking at playing time here and ratings?
 ```{r}
 
 games_ptcleaned %>%
-    ggplot(aes(x = factor(game_lengths, level = level_order), y = average)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Average User Scores by Game Length", ylab = "User Scores") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Average User Score") + coord_flip()
+    ggplot(aes(x = factor(game_lengths, level = level_order), y = average)) + geom_boxplot(fill = c(wes_palette(n=5, name="Darjeeling1"), wes_palette(n = 4, name = "GrandBudapest2")[4])) + labs(title = "Average User Scores by Game Length", ylab = "User Scores") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Average User Score") + coord_flip()
   
 games_ptcleaned %>%
   ggplot(aes(x = factor(game_lengths, level = level_order), y = bayes_average)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Bayesian Average User Scores by Game Length") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Bayesian Average User Scores")
