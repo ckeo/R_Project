@@ -6,6 +6,8 @@ date: '2022-05-04'
 Note: 
 "In all uses of the BGG XML API, you shall credit BoardGameGeek by name as the source of the data."
 
+https://github.com/rfordatascience/tidytuesday/blob/master/data/2022/2022-01-25/readme.md
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -67,7 +69,8 @@ ratings %>%
   ggplot(aes(x = bayes_average)) + geom_histogram()
 
 ratings %>%
-  ggplot(aes(x = average)) + geom_histogram()
+  ggplot(aes(x = average)) + geom_histogram(fill = c(wes_palette(n = 1, name = "Zissou1"))) +labs(title = "Distribution of Average Ratings") + scale_x_continuous(name="Average User Rating") + scale_y_continuous(name="Count")
+
 
 ```
 I should also look at a graph of number of reviews and make a cutoff maybe? They already have that you must have at least 30 reviews to be included though. and the median number of reviews is 122.
@@ -117,12 +120,19 @@ sum(games$minplaytime == 0)
 ```
 
 
-Remove useless rows, seems like when year is 0 the rows are usually not meaningful
+Maybe remove useless rows seems like when a bunch of cols are 0 the rows are usually not meaningful?
+
+```{r}
+games = games %>%
+  filter(year != 0 | playingtime != 0 | minplayers != 0)
+
+#This only removes six rows but they were def useless rows
+
+```
 
 ```{r}
 games %>%
-  filter(year == 0 & playingtime == 0)
-
+  ggplot(aes(x = owned)) + geom_histogram(fill = c(wes_palette(n = 5, name = "Zissou1")[5]), bins = 100) +labs(title = "Distribution of Number of Users Owning the Games") + scale_x_continuous(name="Number of Users Marking Game as 'Owned'") + scale_y_continuous(name="Count")
 
 ```
 
@@ -157,12 +167,12 @@ games_ptcleaned = games %>%
   mutate(game_lengths = ifelse(playingtime < 15, "Very Short (<15 min)", ifelse(playingtime < 30, "Short (15-30 min)", ifelse(playingtime < 60, "Medium (30-60 min)", ifelse(playingtime < 120, "Long (60-120 min)", ifelse(playingtime < 240, "Very Long (120-240 min)", "More than 240 min"))))))
 
 games_ptcleaned %>%
-  ggplot(aes(x = factor(game_lengths, level = rev(level_order)))) + geom_bar(fill = wes_palette(n = 1, name = "FantasticFox1")) + coord_flip() + labs(title = "Board Game Lengths") + scale_x_discrete(name="Board Game Length") + scale_y_discrete(name="Count")
+  ggplot(aes(x = factor(game_lengths, level = (level_order)))) + geom_bar(fill = wes_palette(n = 1, name = "FantasticFox1")) + coord_flip() + labs(title = "Board Game Lengths") + scale_x_discrete(name="Board Game Length") + scale_y_continuous(name="Count")
 
 
 
 
-#probably there should be a reason I picked these increments. They just seemed good to me.
+#probably there should be a reason I picked these increments. They just seemed good to me. I guess rather than dealing with the 60000 hour game I am just assuming its really long and putting it in the really long category.
 
 
 
@@ -179,12 +189,47 @@ Looking at playing time here and ratings?
 ```{r}
 
 games_ptcleaned %>%
-    ggplot(aes(x = factor(game_lengths, level = level_order), y = average)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Average User Scores by Game Length", ylab = "User Scores") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Average User Score")
+    ggplot(aes(x = factor(game_lengths, level = level_order), y = average)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Average User Scores by Game Length", ylab = "User Scores") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Average User Score") + coord_flip()
   
 games_ptcleaned %>%
   ggplot(aes(x = factor(game_lengths, level = level_order), y = bayes_average)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Bayesian Average User Scores by Game Length") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Bayesian Average User Scores")
 
+
+anova = aov(average ~ game_lengths, data = games_ptcleaned)
+summary(anova)
+#so according to anova at least one of the means is significantly different. Got a warning about something being unbalanced tho. Some of the groups are much larger than others so could be the problem.
+
 ```
+How about same plot for number owned/wished
+
+```{r}
+games_ptcleaned %>%
+  filter(owned > 1000) %>%
+    ggplot(aes(x = factor(game_lengths, level = level_order), y = owned)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Number of Users Marking as 'Owned' by Game Length") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Number of Users Marking as Owned") + coord_flip()
+
+games_ptcleaned %>%
+    ggplot(aes(x = factor(game_lengths, level = level_order), y = wishing)) + geom_boxplot(fill = c(wes_palette(n=5, name="FantasticFox1"), wes_palette(n = 1, name = "Zissou1"))) + labs(title = "Average User Scores by Game Length", ylab = "User Scores") + scale_x_discrete(name="Board Game Length")  + scale_y_continuous(name = "Average User Score") + coord_flip()
+```
+
+
+Do rating and own/wish correlate?
+
+```{r}
+ggplot(games_ptcleaned, aes(x = average, y = owned)) + geom_point() + geom_density2d() + labs(title = "Number of Users with Game marked as 'Owned' Vs. Average User Rating") + scale_x_continuous(name = "Average User Rating") + scale_y_continuous(name = "Number of Users with Game marked 'Owned'") + geom_hline(linetype = "dashed", color = 'red', yintercept = 10000)
+
+summary(lm(owned ~ average, data = games_ptcleaned))
+
+ggplot(games_ptcleaned, aes(x = average, y = wishing)) + geom_point() + labs(title = "Number of Users with Game on Wishlist Vs. Average User Rating") + scale_x_continuous(name = "Average User Rating") + scale_y_continuous(name = "Number of Users with Game on Wishlist")
+
+summary(lm(wishing ~ average, data = games_ptcleaned))
+
+ggplot(games_ptcleaned, aes(x = average, y = wishing)) + labs(title = "Number of Users with Game on Wishlist Vs. Average User Rating") + scale_x_continuous(name = "Average User Rating") + scale_y_continuous(name = "Number of Users with Game on Wishlist") + geom_point() + geom_density2d() 
+
+ggplot(games_ptcleaned, aes(x = average, y = wishing)) + geom_point() + geom_density2d()
+
+```
+
+
 
 
 
@@ -247,7 +292,7 @@ games$boardgamecategory = str_split(games$boardgamecategory, ", ")
 head(games)
 
 sum(!is.na(unique(unlist(games$boardgamecategory))))
-#84 different categories of boardgames. Which are the top 20?
+#84 different categories of boardgames. Which are the top 20 or so?
 
 
 
@@ -272,7 +317,7 @@ df %>%
   mutate(perc = n/nrow(df)) %>%
   arrange(desc(perc)) %>%
   filter(perc > .015) %>%
-  ggplot(aes(x = fct_reorder(category, perc), y = perc)) + geom_col() + labs(title = "Top Game Categories (Make up over 1.5% of all categories)") + scale_x_discrete("Category") + scale_y_continuous("Percent of Total Categories") +coord_flip()
+  ggplot(aes(x = fct_reorder(category, perc), y = perc)) + geom_col(fill = wes_palette(n=4, name="GrandBudapest2")[4]) + labs(title = "Top Game Categories (Make up over 1.5% of all categories)") + scale_x_discrete("Category") + scale_y_continuous("Percent of Total Categories") +coord_flip()
 
 
 
@@ -334,7 +379,7 @@ Lets graph the cat_stats for rating. How to graph something with median and sd??
 
 ```{r}
 
-ggplot(cat_stats, aes(x = fct_reorder(Category, mean_rating), y = mean_rating)) + geom_bar(position = position_dodge(), stat = 'identity', fill = wes_palette(n=5, name="FantasticFox1")[3]) + geom_errorbar(aes(ymin = mean_rating - sd_rating, ymax = mean_rating + sd_rating), width = .2) + coord_flip() + labs(title = "Average User Scores by Game Category") + scale_x_discrete(name="Board Game Category")  + scale_y_continuous(name = "Average User Rating")
+ggplot(cat_stats, aes(x = fct_reorder(Category, mean_rating), y = mean_rating)) + geom_bar(position = position_dodge(), stat = 'identity', fill = wes_palette(n=4, name="GrandBudapest2")[4]) + geom_errorbar(aes(ymin = mean_rating - sd_rating, ymax = mean_rating + sd_rating), width = .2) + coord_flip() + labs(title = "Average User Scores by Game Category") + scale_x_discrete(name="Board Game Category")  + scale_y_continuous(name = "Average User Rating")
 
 ```
 
@@ -343,7 +388,23 @@ ggplot(cat_stats, aes(x = fct_reorder(Category, mean_owned), y = mean_owned)) + 
 
 #ha ha this is not very useful
 #should I have made a cutoff of games must be owned by at least 100 people or something?
+
+#maybe try a boxplot instead? This will have to be of the raw data except duplicate rows with more than one category?? no... idk how to do this
+
+test_med = games %>%
+  filter(Medieval == 1)
+
+test_fan = games %>%
+  filter(Fantasy == 1)
+
+test_med + test_fan + ggplot(data = ) geom_boxplot()
+
+#this isn't going to work cuz all I have are means median and sd for each
+#ggplot(cat_stats, aes(x = fct_reorder(Category, mean_owned), y = owned)) + geom_boxplot( fill = wes_palette(n=5, name="FantasticFox1")[3]) + labs(title = "Number of Users Owning Game by Category") + scale_x_discrete(name="Board Game Category")  + scale_y_continuous(name = "Number of Users Owning Game")
+
 ```
+
+
 
 ```{r}
 
@@ -356,7 +417,7 @@ ggplot(cat_stats, aes(x = fct_reorder(Category, mean_wishing), y = mean_wishing)
 Scatter plot of mean rating and mean owned/wishing? Or median?
 
 ```{r}
-ggplot(cat_stats, aes(x = mean_rating, y = mean_owned)) + geom_point()
+ggplot(cat_stats, aes(x = mean_rating, y = mean_owned)) + geom_point() + 
 
 ggplot(cat_stats, aes(x = mean_rating, y = mean_wishing)) + geom_point()
 
@@ -372,9 +433,40 @@ model_rw = lm(wishing ~ average, games)
 
 summary(model_rw)
 
-#neither of them are really great but average seems to predict rating better than it predicts owned.
+#neither of them are really great but average seems to explain rating better than it explains owned.
 
 #i know i can use category but its gonna be annoying but i should do it
+
+```
+
+Maybe should also look at the tippy top most owned/wished for games and see what they have in common?
+
+```{r}
+games %>%
+  filter(owned > 2000) %>%
+  ggplot(aes(x=owned)) + geom_histogram()
+
+summary(games)
+
+#owned mean is much higher than median.
+
+games %>%
+  arrange(desc(owned))
+#9 games have over 100k people saying they own them but the mean is about 1500, and median like 300 data is really skewed.
+
+cor(games$owned, games$wishing)
+
+#owned and wishing are pretty correlated
+#what if I do wishing and remove all with 0. started with 21,625 games.
+
+games %>%
+  filter(wishing >0 & owned > 0)
+  #summary()
+
+#only drops like 100 lol
+
+
+
 
 ```
 
